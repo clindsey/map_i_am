@@ -1,4 +1,5 @@
 class MapIAm
+  EUROPE_COUNTRY_INDEX: 143
   constructor: (canvas_elem_id, country_name_elem_id) ->
     canvas_dom = document.getElementById canvas_elem_id
     @country_name_dom = document.getElementById country_name_elem_id
@@ -14,115 +15,78 @@ class MapIAm
 
     @world_map_scene()
 
-  world_map_scene: ->
-    @country_name_dom.innerHTML = 'World'
+  build_scene: (scene_name, callback) ->
+    background = @create_background()
+    @stage.addChild background
+    background.onClick = callback if callback?
 
+    @country_name_dom.innerHTML = scene_name
+
+  world_map_scene: ->
+    @build_scene 'World'
+
+    @build_region countries, 1, 0, 0, @stage_half_width, @stage_half_height, (country) =>
+      if country.name == 'Europe'
+        @europe_map_scene()
+      else
+        @country_map_scene country, =>
+          @world_map_scene()
+
+    @stage.update()
+
+  europe_map_scene: ->
+    @build_scene 'Europe', =>
+      @stage.removeAllChildren()
+      @world_map_scene()
+
+    country = countries[@EUROPE_COUNTRY_INDEX]
+
+    p = @determine_positioning country
+
+    @build_region european_countries, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, (country) =>
+      @country_map_scene country, =>
+        @europe_map_scene()
+
+    @stage.update()
+
+  country_map_scene: (country, callback) ->
+    @build_scene country.name, =>
+      @stage.removeAllChildren()
+      callback() if callback?
+
+    p = @determine_positioning country
+
+    @build_country country, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+
+    @stage.update()
+
+  determine_positioning: (country) ->
+    bounds = country.bounds
+    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
+    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
+    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
+    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
+    positioning =
+      offset: @latlng_to_xy bounds
+      scale: scale
+      centering_x: ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
+      centering_y: ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
+
+    positioning
+
+  build_region: (countries, scale, x_offset, y_offset, x_centering, y_centering, callback) ->
     country_index = -1
 
     for country in countries
       country_name = country.name
       country_index += 1
 
-      @build_country country, 1, 0, 0, @stage_half_width, @stage_half_height, (region_shape) =>
-        ((country_index, country_name) =>
+      @build_country country, scale, x_offset, y_offset, x_centering, y_centering, (region_shape) =>
+        ((country, country_index, callback) =>
           region_shape.onClick = =>
             @stage.removeAllChildren()
-            if country_name == 'Europe'
-              @europe_map_scene country_index
-            else
-              @country_map_scene country_index
-        )(country_index, country.name)
-
-    @stage.update()
-
-  europe_map_scene: (country_index) ->
-    background = @create_background()
-    @stage.addChild background
-    background.onClick = =>
-      @stage.removeAllChildren()
-      @world_map_scene()
-
-    @country_name_dom.innerHTML = 'Europe'
-
-    european_country_index = -1
-
-    country = countries[country_index]
-
-    @country_name_dom.innerHTML = country.name
-
-    bounds = country.bounds
-    offset = @latlng_to_xy bounds
-    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
-    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
-    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
-    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
-
-    centering_x = ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
-    centering_y = ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
-
-    for country in european_countries
-      european_country_index += 1
-      country_name = country.name
-      country_index += 1
-
-      @build_country country, scale, offset.x, offset.y, centering_x, centering_y, (region_shape) =>
-        ((european_country_index, country_name) =>
-          region_shape.onClick = =>
-            @stage.removeAllChildren()
-            @european_country_map_scene(european_country_index)
-        )(european_country_index, country.name)
-
-    @stage.update()
-
-  european_country_map_scene: (european_country_index) ->
-    background = @create_background()
-    @stage.addChild background
-    background.onClick = =>
-      @stage.removeAllChildren()
-      @europe_map_scene 143 # does not belong here
-
-    country = european_countries[european_country_index]
-
-    @country_name_dom.innerHTML = country.name
-
-    bounds = country.bounds
-    offset = @latlng_to_xy bounds
-    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
-    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
-    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
-    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
-
-    centering_x = ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
-    centering_y = ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
-
-    @build_country country, scale, offset.x, offset.y, centering_x, centering_y
-    
-    @stage.update()
-
-  country_map_scene: (country_index) ->
-    background = @create_background()
-    @stage.addChild background
-    background.onClick = =>
-      @stage.removeAllChildren()
-      @world_map_scene()
-
-    country = countries[country_index]
-
-    @country_name_dom.innerHTML = country.name
-
-    bounds = country.bounds
-    offset = @latlng_to_xy bounds
-    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
-    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
-    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
-    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
-
-    centering_x = ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
-    centering_y = ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
-
-    @build_country country, scale, offset.x, offset.y, centering_x, centering_y
-
-    @stage.update()
+            callback country if callback?
+        )(country, country_index, callback)
 
   build_country: (country, scale, offset_x, offset_y, centering_x, centering_y, callback) ->
     for borders in country.borders
