@@ -33,6 +33,12 @@ class MapIAm
     @stage.update()
 
   country_map_scene: (country_index) ->
+    background = @create_background()
+    @stage.addChild background
+    background.onClick = =>
+      @stage.removeAllChildren()
+      @world_map_scene()
+
     country = countries[country_index]
 
     @country_name_dom.innerHTML = country.name
@@ -53,44 +59,56 @@ class MapIAm
 
   build_country: (country, scale, offset_x, offset_y, centering_x, centering_y, callback) ->
     for borders in country.borders
-        region = new Graphics()
+      region = new Graphics()
 
-        region.beginStroke '#8D98A7'
-        region.beginFill '#F9FFEC'
-        region.setStrokeStyle 1
+      region.beginStroke '#8D98A7'
+      region.beginFill '#F9FFEC'
+      region.setStrokeStyle 1
 
-        region.moveTo 0, 0
-        first_move = true
+      region.moveTo 0, 0
+      first_move = true
 
-        for latlng in borders
-          xy = @latlng_to_xy latlng
-          px = xy.x * @stage_half_width + @stage_half_width
-          py = xy.y * @stage_half_height + @stage_half_height
+      for latlng in borders
+        xy = @latlng_to_xy latlng
+        px = xy.x * @stage_half_width + @stage_half_width
+        py = xy.y * @stage_half_height + @stage_half_height
 
-          px -= offset_x * @stage_half_width + @stage_half_width
-          py -= offset_y * @stage_half_height + @stage_half_height
+        px -= offset_x * @stage_half_width + @stage_half_width
+        py -= offset_y * @stage_half_height + @stage_half_height
 
-          px *= scale
-          py *= scale
+        px *= scale
+        py *= scale
 
-          px += centering_x
-          py += centering_y
+        px += centering_x
+        py += centering_y
 
-          if first_move
-            region.moveTo px, py
-            first_move = false
+        if first_move
+          region.moveTo px, py
+          first_move = false
 
-          else
-            region.lineTo px, py
+        else
+          region.lineTo px, py
 
-        region.endStroke()
-        region.endFill()
+      region.endStroke()
+      region.endFill()
 
-        region_shape = new Shape region
+      region_shape = new Shape region
 
-        @stage.addChild region_shape
+      @stage.addChild region_shape
 
-        callback region_shape if callback?
+      callback region_shape if callback?
+
+  create_background: () ->
+    background = new Shape()
+
+    background.graphics.beginFill '#C3D3E0'
+    background.graphics.moveTo(0, 0)
+    background.graphics.lineTo(@stage_bounds.width, 0)
+    background.graphics.lineTo(@stage_bounds.width, @stage_bounds.height)
+    background.graphics.lineTo(0, @stage_bounds.height)
+    background.graphics.endFill()
+
+    background
 
   latlng_to_xy: (latlng) ->
     return x: latlng.lng / 180, y: latlng.lat / (0 - 90)
