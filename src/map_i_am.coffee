@@ -9,8 +9,10 @@ class MapIAm
   MARKER_RADIUS: 4
   MARKER_BORDER_WIDTH: 1
   MARKER_BORDER_COLOR: Graphics.getRGB(100, 0, 0, 0.75)
+  US_STATE_LOOKUP: {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","District of Columbia":"DC","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY","American Samoa":"AS","Guam":"GU","Northern Mariana Islands":"MP","Puerto Rico":"PR","Virgin Islands":"VI","U.S. Minor Outlying Islands":"","Federated States of Micronesia":"FM","Marshall Islands":"MH","Palau":"PW","Armed Forces\n- Americas (except Canada)":"AA","Armed Forces\n- Europe\n- Canada\n- Middle East\n- Africa":"AE","Armed Forces\n- Pacific":"AP","Canal Zone":"CZ","Philippine Islands":"PI","Trust Territory of the Pacific Islands":"TT","Commonwealth of the Northern Mariana Islands":"CM"}
   markers: {}
-  constructor: (canvas_elem_id, country_name_elem_id) ->
+  constructor: (canvas_elem_id, country_name_elem_id, markers) ->
+    @markers = markers if markers?
     canvas_dom = document.getElementById canvas_elem_id
     @country_name_dom = document.getElementById country_name_elem_id
 
@@ -37,7 +39,8 @@ class MapIAm
         @country_map_scene country, =>
           @world_map_scene()
 
-    @place_markers()
+    for name, marker of @markers
+      @plot_marker marker, 1, 0, 0, @stage_half_width, @stage_half_height
 
     @stage.update()
 
@@ -53,6 +56,10 @@ class MapIAm
     @build_region states, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, (country) =>
       @country_map_scene country, =>
         @us_map_scene()
+
+    for name, marker of @markers
+      if marker.country_code == 'US'
+        @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
 
     @stage.update()
 
@@ -79,6 +86,15 @@ class MapIAm
     p = @determine_positioning country
 
     @build_country country, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+
+    for name, marker of @markers
+      if marker.country_code == 'US'
+        for state, state_abbr of @US_STATE_LOOKUP
+          if marker.region == state_abbr
+            @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+      else if marker.country_code == country.name
+        @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+
 
     @stage.update()
 
@@ -173,19 +189,13 @@ class MapIAm
   latlng_to_xy: (latlng) ->
     { x: latlng.lng / 180, y: latlng.lat / (0 - 90) }
 
+  add_marker: (name, lat, lng, country_code, region) ->
+    @markers[name] = { lat: lat, lng: lng, country_code: country_code, region: region }
+
   update: ->
-    # TODO: refactor this to update markers in-place, without reseting to world view
-    @stage.removeAllChildren()
-    @world_map_scene()
+    @stage.update()
 
-  add_marker: (name, lat, lng) ->
-    @markers[name] = { lat: lat, lng: lng }
-
-  place_markers: ->
-    for name, marker of @markers
-      @create_map_marker marker.lat, marker.lng
-
-  create_map_marker: (lat, lng) ->
+  create_map_marker: (x, y) ->
     marker = new Shape()
 
     marker.graphics.setStrokeStyle @MARKER_BORDER_WIDTH
@@ -193,15 +203,25 @@ class MapIAm
     marker.graphics.beginFill @MARKER_COLOR
     marker.graphics.drawCircle 0, 0, @MARKER_RADIUS
 
-    xy = @latlng_to_xy { lat: lat, lng: lng }
-
-    px = xy.x * @stage_half_width + @stage_half_width
-    py = xy.y * @stage_half_height + @stage_half_height
-
-    marker.x = px
-    marker.y = py
+    marker.x = x
+    marker.y = y
 
     @stage.addChild marker
 
-jQuery ->
-  window.map_i_am = new MapIAm 'map-canvas', 'country-name'
+  plot_marker: (marker, scale, offset_x, offset_y, centering_x, centering_y) ->
+    xy = @latlng_to_xy { lat: marker.lat, lng: marker.lng }
+    px = xy.x * @stage_half_width + @stage_half_width
+    py = xy.y * @stage_half_height + @stage_half_height
+
+    px -= offset_x * @stage_half_width + @stage_half_width
+    py -= offset_y * @stage_half_height + @stage_half_height
+
+    px *= scale
+    py *= scale
+
+    px += centering_x
+    py += centering_y
+
+    @create_map_marker px, py
+
+window.MapIAm = MapIAm
