@@ -42,10 +42,61 @@ class MapIAm
       @stage.removeAllChildren()
       @world_map_scene()
 
-    country = countries[country_index]
-
     @country_name_dom.innerHTML = 'Europe'
 
+    european_country_index = -1
+
+    country = countries[country_index]
+
+    @country_name_dom.innerHTML = country.name
+
+    bounds = country.bounds
+    offset = @latlng_to_xy bounds
+    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
+    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
+    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
+    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
+
+    centering_x = ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
+    centering_y = ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
+
+    for country in european_countries
+      european_country_index += 1
+      country_name = country.name
+      country_index += 1
+
+      @build_country country, scale, offset.x, offset.y, centering_x, centering_y, (region_shape) =>
+        ((european_country_index, country_name) =>
+          region_shape.onClick = =>
+            @stage.removeAllChildren()
+            @european_country_map_scene(european_country_index)
+        )(european_country_index, country.name)
+
+    @stage.update()
+
+  european_country_map_scene: (european_country_index) ->
+    background = @create_background()
+    @stage.addChild background
+    background.onClick = =>
+      @stage.removeAllChildren()
+      @europe_map_scene 143 # does not belong here
+
+    country = european_countries[european_country_index]
+
+    @country_name_dom.innerHTML = country.name
+
+    bounds = country.bounds
+    offset = @latlng_to_xy bounds
+    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
+    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
+    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
+    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
+
+    centering_x = ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
+    centering_y = ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
+
+    @build_country country, scale, offset.x, offset.y, centering_x, centering_y
+    
     @stage.update()
 
   country_map_scene: (country_index) ->
