@@ -1,6 +1,10 @@
 class MapIAm
   EUROPE_COUNTRY_INDEX: 143
   US_COUNTRY_INDEX: 7
+  BACKGROUND_COLOR: '#C3D3E0'
+  COUNTRY_COLOR: '#F9FFEC'
+  COUNTRY_BORDER_COLOR: '#8D98A7'
+  COUNTRY_BORDER_WIDTH: 1
   constructor: (canvas_elem_id, country_name_elem_id) ->
     canvas_dom = document.getElementById canvas_elem_id
     @country_name_dom = document.getElementById country_name_elem_id
@@ -110,9 +114,9 @@ class MapIAm
     for borders in country.borders
       region = new Graphics()
 
-      region.beginStroke '#8D98A7'
-      region.beginFill '#F9FFEC'
-      region.setStrokeStyle 1
+      region.beginStroke @COUNTRY_BORDER_COLOR
+      region.beginFill @COUNTRY_COLOR
+      region.setStrokeStyle @COUNTRY_BORDER_WIDTH
 
       region.moveTo 0, 0
       first_move = true
@@ -150,7 +154,7 @@ class MapIAm
   create_background: () ->
     background = new Shape()
 
-    background.graphics.beginFill '#C3D3E0'
+    background.graphics.beginFill @BACKGROUND_COLOR
     background.graphics.moveTo(0, 0)
     background.graphics.lineTo(@stage_bounds.width, 0)
     background.graphics.lineTo(@stage_bounds.width, @stage_bounds.height)
