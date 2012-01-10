@@ -24,11 +24,27 @@ class MapIAm
       country_index += 1
 
       @build_country country, 1, 0, 0, @stage_half_width, @stage_half_height, (region_shape) =>
-        ((country_index) =>
+        ((country_index, country_name) =>
           region_shape.onClick = =>
             @stage.removeAllChildren()
-            @country_map_scene(country_index)
-        )(country_index)
+            if country_name == 'Europe'
+              @europe_map_scene country_index
+            else
+              @country_map_scene country_index
+        )(country_index, country.name)
+
+    @stage.update()
+
+  europe_map_scene: (country_index) ->
+    background = @create_background()
+    @stage.addChild background
+    background.onClick = =>
+      @stage.removeAllChildren()
+      @world_map_scene()
+
+    country = countries[country_index]
+
+    @country_name_dom.innerHTML = 'Europe'
 
     @stage.update()
 
