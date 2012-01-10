@@ -111,7 +111,7 @@ class MapIAm
     background
 
   latlng_to_xy: (latlng) ->
-    return x: latlng.lng / 180, y: latlng.lat / (0 - 90)
+    { x: latlng.lng / 180, y: latlng.lat / (0 - 90) }
 
 jQuery ->
   map_i_am = new MapIAm 'map-canvas', 'country-name'
