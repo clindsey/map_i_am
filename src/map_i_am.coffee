@@ -1,5 +1,6 @@
 class MapIAm
   EUROPE_COUNTRY_INDEX: 143
+  US_COUNTRY_INDEX: 7
   constructor: (canvas_elem_id, country_name_elem_id) ->
     canvas_dom = document.getElementById canvas_elem_id
     @country_name_dom = document.getElementById country_name_elem_id
@@ -28,9 +29,26 @@ class MapIAm
     @build_region countries, 1, 0, 0, @stage_half_width, @stage_half_height, (country) =>
       if country.name == 'Europe'
         @europe_map_scene()
+      else if country.name == 'United States'
+        @us_map_scene()
       else
         @country_map_scene country, =>
           @world_map_scene()
+
+    @stage.update()
+
+  us_map_scene: ->
+    @build_scene 'United States', =>
+      @stage.removeAllChildren()
+      @world_map_scene()
+
+    country = countries[@US_COUNTRY_INDEX]
+
+    p = @determine_positioning country
+
+    @build_region states, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, (country) =>
+      @country_map_scene country, =>
+        @us_map_scene()
 
     @stage.update()
 
