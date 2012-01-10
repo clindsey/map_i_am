@@ -5,6 +5,11 @@ class MapIAm
   COUNTRY_COLOR: '#F9FFEC'
   COUNTRY_BORDER_COLOR: '#8D98A7'
   COUNTRY_BORDER_WIDTH: 1
+  MARKER_COLOR: '#880000'
+  MARKER_RADIUS: 4
+  MARKER_BORDER_WIDTH: 1
+  MARKER_BORDER_COLOR: Graphics.getRGB(100, 0, 0, 0.75)
+  markers: {}
   constructor: (canvas_elem_id, country_name_elem_id) ->
     canvas_dom = document.getElementById canvas_elem_id
     @country_name_dom = document.getElementById country_name_elem_id
@@ -20,13 +25,6 @@ class MapIAm
 
     @world_map_scene()
 
-  build_scene: (scene_name, callback) ->
-    background = @create_background()
-    @stage.addChild background
-    background.onClick = callback if callback?
-
-    @country_name_dom.innerHTML = scene_name
-
   world_map_scene: ->
     @build_scene 'World'
 
@@ -38,6 +36,8 @@ class MapIAm
       else
         @country_map_scene country, =>
           @world_map_scene()
+
+    @place_markers()
 
     @stage.update()
 
@@ -81,6 +81,13 @@ class MapIAm
     @build_country country, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
 
     @stage.update()
+
+  build_scene: (scene_name, callback) ->
+    background = @create_background()
+    @stage.addChild background
+    background.onClick = callback if callback?
+
+    @country_name_dom.innerHTML = scene_name
 
   determine_positioning: (country) ->
     bounds = country.bounds
@@ -166,5 +173,35 @@ class MapIAm
   latlng_to_xy: (latlng) ->
     { x: latlng.lng / 180, y: latlng.lat / (0 - 90) }
 
+  update: ->
+    # TODO: refactor this to update markers in-place, without reseting to world view
+    @stage.removeAllChildren()
+    @world_map_scene()
+
+  add_marker: (name, lat, lng) ->
+    @markers[name] = { lat: lat, lng: lng }
+
+  place_markers: ->
+    for name, marker of @markers
+      @create_map_marker marker.lat, marker.lng
+
+  create_map_marker: (lat, lng) ->
+    marker = new Shape()
+
+    marker.graphics.setStrokeStyle @MARKER_BORDER_WIDTH
+    marker.graphics.beginStroke @MARKER_BORDER_COLOR
+    marker.graphics.beginFill @MARKER_COLOR
+    marker.graphics.drawCircle 0, 0, @MARKER_RADIUS
+
+    xy = @latlng_to_xy { lat: lat, lng: lng }
+
+    px = xy.x * @stage_half_width + @stage_half_width
+    py = xy.y * @stage_half_height + @stage_half_height
+
+    marker.x = px
+    marker.y = py
+
+    @stage.addChild marker
+
 jQuery ->
-  map_i_am = new MapIAm 'map-canvas', 'country-name'
+  window.map_i_am = new MapIAm 'map-canvas', 'country-name'
