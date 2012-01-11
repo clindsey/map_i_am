@@ -10,6 +10,7 @@ class MapIAm
   MARKER_BORDER_WIDTH: 1
   MARKER_BORDER_COLOR: Graphics.getRGB(100, 0, 0, 0.75)
   US_STATE_LOOKUP: {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","District of Columbia":"DC","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY","American Samoa":"AS","Guam":"GU","Northern Mariana Islands":"MP","Puerto Rico":"PR","Virgin Islands":"VI","U.S. Minor Outlying Islands":"","Federated States of Micronesia":"FM","Marshall Islands":"MH","Palau":"PW","Armed Forces\n- Americas (except Canada)":"AA","Armed Forces\n- Europe\n- Canada\n- Middle East\n- Africa":"AE","Armed Forces\n- Pacific":"AP","Canal Zone":"CZ","Philippine Islands":"PI","Trust Territory of the Pacific Islands":"TT","Commonwealth of the Northern Mariana Islands":"CM"}
+  hover_region: null
   markers: {}
   constructor: (canvas_elem_id, country_name_elem_id, markers) ->
     @markers = markers if markers?
@@ -17,6 +18,7 @@ class MapIAm
     @country_name_dom = document.getElementById country_name_elem_id
 
     @stage = new Stage canvas_dom
+    @stage.enableMouseOver()
 
     @stage_bounds = new Rectangle
     @stage_bounds.width = canvas_dom.width
@@ -135,14 +137,25 @@ class MapIAm
           region_shape.onClick = =>
             @stage.removeAllChildren()
             callback country if callback?
+          region_shape.onMouseOver = =>
+            if @hover_region?
+              for region in @hover_region
+                @stage.removeChild region
+            @hover_region = @build_country country, scale, x_offset, y_offset, x_centering, y_centering, ((region_shape) => @hover_region = region_shape ), true # TODO: refactor this to use the existing shape data, just need to make it so color is changeable
+            @stage.update()
+          region_shape.onMouseOut = =>
+            if @hover_region?
+              for region in @hover_region
+                @stage.removeChild region
+            @stage.update()
         )(country, country_index, callback)
 
-  build_country: (country, scale, offset_x, offset_y, centering_x, centering_y, callback) ->
+  build_country: (country, scale, offset_x, offset_y, centering_x, centering_y, callback, is_hover) ->
     for borders in country.borders
       region = new Graphics()
 
       region.beginStroke @COUNTRY_BORDER_COLOR
-      region.beginFill @COUNTRY_COLOR
+      region.beginFill if is_hover? then 'rgba(0, 0, 136, 0.6)' else @COUNTRY_COLOR
       region.setStrokeStyle @COUNTRY_BORDER_WIDTH
 
       region.moveTo 0, 0

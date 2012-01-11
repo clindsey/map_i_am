@@ -9,20 +9,29 @@
     <script type="text/javascript" src="lib/european_countries.js"></script>
     <script type="text/javascript" src="lib/us_states.js"></script>
     <script type="text/javascript" src="lib/map_i_am.js"></script>
-    <script type="text/javascript" src="lib/demo.js"></script>
+    <script type="text/javascript" src="lib/example.js"></script>
     <style type="text/css">
       .map-wrapper {
         width: 860px;
         margin: 0 auto;
       }
+      .canvas-container {
+        overflow: hidden;
+        height: 440px;
+      }
+      .canvas-container canvas {
+      }
     </style>
   </head>
   <body>
+    <h1>Map.I.Am</h1>
     <div class="map-wrapper">
-      <canvas id="map-canvas" width="860" height="440"></canvas>
+      <div class="canvas-container">
+        <canvas id="map-canvas" width="860" height="440"></canvas>
+      </div>
       <span id="country-name"></span>
-      <p>click a country to zoom in, ocean to zoom out</p>
     </div>
+    <p>click a country to zoom in, ocean to zoom out</p>
     <script type="text/javascript" src="https://raw.github.com/codejoust/session.js/master/session.js"></script>
   </body>
 </html>

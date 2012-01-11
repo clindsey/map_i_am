@@ -2,18 +2,13 @@ window.session =
   options:
     gapi_locations: true
   start: (session) ->
-    jQuery () -> # barf
+    jQuery -> # barf
       map_i_am = new MapIAm 'map-canvas', 'country-name', {
-          'Me':
-            lat: session.location.latitude
-            lng: session.location.longitude
-            country_code: session.location.address.country_code
-            region: session.location.address.region
           'Jacob':
-            lat: -26.057053
-            lng: 145.305433
-            country_code: 'AU'
-            region: ''
+            lat: if session?.location?.latitude? then session.location.latitude else -26.057053
+            lng: if session?.location?.longitude? then session.location.longitude else 145.305433
+            country_code: if session?.location?.address?.country_code? then session.location.address.country_code else 'AU'
+            region: if session?.location?.address?.region? then session.location.address.region else ''
           'Samuel':
             lat: 41.047428
             lng: 28.858663
