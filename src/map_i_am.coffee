@@ -76,6 +76,11 @@ class MapIAm
       @country_map_scene country, =>
         @europe_map_scene()
 
+    for name, marker of @markers
+      for country in european_countries
+        if marker.country_code == country.code
+          @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+
     @stage.update()
 
   country_map_scene: (country, callback) ->
