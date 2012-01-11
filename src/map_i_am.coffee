@@ -93,7 +93,7 @@ class MapIAm
     @build_country country, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
 
     for name, marker of @markers
-      if marker.country_code == 'US'
+      if marker.country_code == 'US' and not country.code?
         for state, state_abbr of @US_STATE_LOOKUP
           if marker.region == state_abbr
             @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
