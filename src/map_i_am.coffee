@@ -92,9 +92,8 @@ class MapIAm
         for state, state_abbr of @US_STATE_LOOKUP
           if marker.region == state_abbr
             @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
-      else if marker.country_code == country.name
+      else if marker.country_code == country.code
         @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
-
 
     @stage.update()
 
