@@ -5,6 +5,7 @@ class MapIAm
   COUNTRY_COLOR: '#F9FFEC'
   COUNTRY_BORDER_COLOR: '#8D98A7'
   COUNTRY_BORDER_WIDTH: 1
+  COUNTRY_HOVER_COLOR: Graphics.getRGB(136, 0, 0, 0.3)
   MARKER_COLOR: '#880000'
   MARKER_RADIUS: 4
   MARKER_BORDER_WIDTH: 1
@@ -155,7 +156,7 @@ class MapIAm
       region = new Graphics()
 
       region.beginStroke @COUNTRY_BORDER_COLOR
-      region.beginFill if is_hover? then 'rgba(0, 0, 136, 0.6)' else @COUNTRY_COLOR
+      region.beginFill if is_hover? then @COUNTRY_HOVER_COLOR else @COUNTRY_COLOR
       region.setStrokeStyle @COUNTRY_BORDER_WIDTH
 
       region.moveTo 0, 0
