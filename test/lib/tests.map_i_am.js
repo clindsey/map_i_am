@@ -35,16 +35,18 @@
       }), 'throws message when counries map data is not specified');
     });
     test('MapIAm intialize', function() {
-      var map_i_am;
+      var canvas_height, canvas_width, map_i_am;
       map_i_am = new MapIAm('map_i_am-canvas', 'region-label', {});
       ok(map_i_am, 'MapIAm instance map_i_am');
       ok(map_i_am.stage, 'map_i_am.stage');
       ok(map_i_am.stage.canvas, 'map_i_am.stage.canvas');
+      canvas_width = 480;
+      canvas_height = 320;
       ok(map_i_am.stage_bounds, 'map_i_am.stage_bounds');
-      equals(map_i_am.stage_bounds.width, 480, 'map_i_am.stage_bounds.width');
-      equals(map_i_am.stage_bounds.height, 320, 'map_i_am.stage_bounds.height');
-      equals(map_i_am.stage_half_width, 480 / 2, 'map_i_am.stage_half_width');
-      return equals(map_i_am.stage_half_height, (3 / 5) * 320, 'map_i_am.stage_half_height');
+      equals(map_i_am.stage_bounds.width, canvas_width, 'map_i_am.stage_bounds.width');
+      equals(map_i_am.stage_bounds.height, canvas_height, 'map_i_am.stage_bounds.height');
+      equals(map_i_am.stage_half_width, canvas_width / 2, 'map_i_am.stage_half_width');
+      return equals(map_i_am.stage_half_height, canvas_height * (3 / 5), 'map_i_am.stage_half_height');
     });
     return test('MapIAm defaults to world level', function() {
       var map_i_am;

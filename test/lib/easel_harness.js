@@ -32,7 +32,7 @@
   window.Stage = (function() {
     __extends(_Class, Harness);
     function _Class() {
-      _Class.__super__.constructor.call(this, "update");
+      _Class.__super__.constructor.call(this, "update enableMouseOver");
       this.canvas = {};
       this.children = [];
     }
@@ -44,7 +44,7 @@
   EaselGraphics = (function() {
     __extends(_Class, Harness);
     function _Class() {
-      _Class.__super__.constructor.call(this, "beginFill endFill beginStroke endStroke moveTo lineTo setStrokeStyle");
+      _Class.__super__.constructor.call(this, "beginFill endFill beginStroke endStroke moveTo lineTo setStrokeStyle clear");
     }
     return _Class;
   })();

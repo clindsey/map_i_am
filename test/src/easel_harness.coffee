@@ -12,7 +12,7 @@ Harness = class
 
 window.Stage = class extends Harness
   constructor: ->
-    super "update"
+    super "update enableMouseOver"
     @canvas = {}
     @children = []
   addChild: (display_object) ->
@@ -20,7 +20,7 @@ window.Stage = class extends Harness
 
 EaselGraphics = class extends Harness
   constructor: ->
-    super "beginFill endFill beginStroke endStroke moveTo lineTo setStrokeStyle"
+    super "beginFill endFill beginStroke endStroke moveTo lineTo setStrokeStyle clear"
 
 window.Rectangle = class
 
