@@ -1,22 +1,18 @@
-class MapIAm
-  EUROPE_COUNTRY_INDEX: 143
-  US_COUNTRY_INDEX: 7
-  BACKGROUND_COLOR: '#C3D3E0'
-  COUNTRY_COLOR: '#F9FFEC'
-  COUNTRY_BORDER_COLOR: '#8D98A7'
-  COUNTRY_BORDER_WIDTH: 1
-  COUNTRY_HOVER_COLOR: Graphics.getRGB(136, 0, 0, 0.3)
-  MARKER_COLOR: '#880000'
-  MARKER_RADIUS: 4
-  MARKER_BORDER_WIDTH: 1
-  MARKER_BORDER_COLOR: Graphics.getRGB(100, 0, 0, 0.75)
-  US_STATE_LOOKUP: {"Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO","Connecticut":"CT","Delaware":"DE","District of Columbia":"DC","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA","West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY","American Samoa":"AS","Guam":"GU","Northern Mariana Islands":"MP","Puerto Rico":"PR","Virgin Islands":"VI","U.S. Minor Outlying Islands":"","Federated States of Micronesia":"FM","Marshall Islands":"MH","Palau":"PW","Armed Forces\n- Americas (except Canada)":"AA","Armed Forces\n- Europe\n- Canada\n- Middle East\n- Africa":"AE","Armed Forces\n- Pacific":"AP","Canal Zone":"CZ","Philippine Islands":"PI","Trust Territory of the Pacific Islands":"TT","Commonwealth of the Northern Mariana Islands":"CM"}
-  hover_region: null
-  markers: {}
-  constructor: (canvas_elem_id, country_name_elem_id, markers) ->
-    @markers = markers if markers?
-    canvas_dom = document.getElementById canvas_elem_id
-    @country_name_dom = document.getElementById country_name_elem_id
+window.MapIAm = class
+  constructor: (bind_canvas_elem_id, bind_label_elem_id, all_countries_map_data, european_countries_map_data, us_states_map_data, markers) ->
+    throw 'Err: canvas ID not specified!' unless bind_canvas_elem_id?
+    canvas_dom = document.getElementById bind_canvas_elem_id
+    throw 'Err: canvas ID incorrect, element not found!' unless canvas_dom?
+
+    throw 'Err: label ID not specified!' unless bind_label_elem_id?
+    label_dom = document.getElementById bind_label_elem_id
+    throw 'Err: label ID incorrect, element not found!' unless label_dom?
+
+    throw 'Err: countries map data not specified!' unless all_countries_map_data?
+
+    throw 'Err: european countries map data not specified!' unless european_countries_map_data?
+
+    throw 'Err: US states map data not specified!' unless us_states_map_data?
 
     @stage = new Stage canvas_dom
     @stage.enableMouseOver()
@@ -26,220 +22,205 @@ class MapIAm
     @stage_bounds.height = canvas_dom.height
 
     @stage_half_width = @stage_bounds.width / 2
-    @stage_half_height = (3 / 5) * @stage_bounds.height
+    @stage_half_height = @stage_bounds.height * (3 / 5)
 
-    @world_map_scene()
+    @active_scene = new WorldMapScene label_dom, @stage_bounds, @stage, all_countries_map_data, european_countries_map_data, us_states_map_data, @stage_half_width, @stage_half_height, markers
 
-  world_map_scene: ->
-    @build_scene 'World'
+window.MapScene = class
+  constructor: (label_dom, label, stage_bounds, stage, map_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, @markers, callback) ->
+    @countries = []
 
-    @build_region countries, 1, 0, 0, @stage_half_width, @stage_half_height, (country) =>
-      if country.name == 'Europe'
-        @europe_map_scene()
-      else if country.name == 'United States'
-        @us_map_scene()
-      else
-        @country_map_scene country, =>
-          @world_map_scene()
+    label_dom.innerHTML = label
 
-    for name, marker of @markers
-      @plot_marker marker, 1, 0, 0, @stage_half_width, @stage_half_height
+    stage.removeAllChildren()
 
-    @stage.update()
+    background_options =
+      'background-color': '#CDE' # TODO style abstraction
 
-  us_map_scene: ->
-    @build_scene 'United States', =>
-      @stage.removeAllChildren()
-      @world_map_scene()
-
-    country = countries[@US_COUNTRY_INDEX]
-
-    p = @determine_positioning country
-
-    @build_region states, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, (country) =>
-      @country_map_scene country, =>
-        @us_map_scene()
-
-    for name, marker of @markers
-      if marker.country_code == 'US'
-        @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
-
-    @stage.update()
-
-  europe_map_scene: ->
-    @build_scene 'Europe', =>
-      @stage.removeAllChildren()
-      @world_map_scene()
-
-    country = countries[@EUROPE_COUNTRY_INDEX]
-
-    p = @determine_positioning country
-
-    @build_region european_countries, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, (country) =>
-      @country_map_scene country, =>
-        @europe_map_scene()
-
-    for name, marker of @markers
-      for country in european_countries
-        if marker.country_code == country.code
-          @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
-
-    @stage.update()
-
-  country_map_scene: (country, callback) ->
-    @build_scene country.name, =>
-      @stage.removeAllChildren()
+    background = new MapBackground stage_bounds, background_options
+    background.onClick = ->
       callback() if callback?
 
-    p = @determine_positioning country
+    stage.addChild background
 
-    @build_country country, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+    for country in map_data
+      @countries.push new Country stage, country, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback
 
     for name, marker of @markers
-      if marker.country_code == 'US' and not country.code?
-        for state, state_abbr of @US_STATE_LOOKUP
-          if marker.region == state_abbr and country.name == state
-            @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
-      else if marker.country_code == country.code
-        @plot_marker marker, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y
+      @plot_marker stage, marker, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height
 
-    @stage.update()
+    stage.update()
 
-  build_scene: (scene_name, callback) ->
-    background = @create_background()
-    @stage.addChild background
-    background.onClick = callback if callback?
+  plot_marker: (stage, marker, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height) ->
+    xy = latlng_to_xy { lat: marker.lat, lng: marker.lng }
+    px = xy.x * stage_half_width + stage_half_width
+    py = xy.y * stage_half_height + stage_half_height
 
-    @country_name_dom.innerHTML = scene_name
-
-  determine_positioning: (country) ->
-    bounds = country.bounds
-    xy_delta = @latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
-    x_scale = @stage_bounds.width / (xy_delta.x * @stage_half_width)
-    y_scale = @stage_bounds.height / (xy_delta.y * @stage_half_height)
-    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
-    positioning =
-      offset: @latlng_to_xy bounds
-      scale: scale
-      centering_x: ((@stage_bounds.width / 2) - ((xy_delta.x * @stage_half_width * scale) / 2))
-      centering_y: ((@stage_bounds.height / 2) - ((xy_delta.y * @stage_half_height * scale) / 2))
-
-    positioning
-
-  build_region: (countries, scale, x_offset, y_offset, x_centering, y_centering, callback) ->
-    country_index = -1
-
-    for country in countries
-      country_name = country.name
-      country_index += 1
-
-      @build_country country, scale, x_offset, y_offset, x_centering, y_centering, (region_shape) =>
-        ((country, country_index, callback) =>
-          region_shape.onClick = =>
-            @stage.removeAllChildren()
-            callback country if callback?
-          region_shape.onMouseOver = =>
-            if @hover_region?
-              for region in @hover_region
-                @stage.removeChild region
-            @hover_region = @build_country country, scale, x_offset, y_offset, x_centering, y_centering, ((region_shape) => @hover_region = region_shape ), true # TODO: refactor this to use the existing shape data, just need to make it so color is changeable
-            @stage.update()
-          region_shape.onMouseOut = =>
-            if @hover_region?
-              for region in @hover_region
-                @stage.removeChild region
-            @stage.update()
-        )(country, country_index, callback)
-
-  build_country: (country, scale, offset_x, offset_y, centering_x, centering_y, callback, is_hover) ->
-    for borders in country.borders
-      region = new Graphics()
-
-      region.beginStroke @COUNTRY_BORDER_COLOR
-      region.beginFill if is_hover? then @COUNTRY_HOVER_COLOR else @COUNTRY_COLOR
-      region.setStrokeStyle @COUNTRY_BORDER_WIDTH
-
-      region.moveTo 0, 0
-      first_move = true
-
-      for latlng in borders
-        xy = @latlng_to_xy latlng
-        px = xy.x * @stage_half_width + @stage_half_width
-        py = xy.y * @stage_half_height + @stage_half_height
-
-        px -= offset_x * @stage_half_width + @stage_half_width
-        py -= offset_y * @stage_half_height + @stage_half_height
-
-        px *= scale
-        py *= scale
-
-        px += centering_x
-        py += centering_y
-
-        if first_move
-          region.moveTo px, py
-          first_move = false
-
-        else
-          region.lineTo px, py
-
-      region.endStroke()
-      region.endFill()
-
-      region_shape = new Shape region
-
-      @stage.addChild region_shape
-
-      callback region_shape if callback?
-
-  create_background: () ->
-    background = new Shape()
-
-    background.graphics.beginFill @BACKGROUND_COLOR
-    background.graphics.moveTo(0, 0)
-    background.graphics.lineTo(@stage_bounds.width, 0)
-    background.graphics.lineTo(@stage_bounds.width, @stage_bounds.height)
-    background.graphics.lineTo(0, @stage_bounds.height)
-    background.graphics.endFill()
-
-    background
-
-  latlng_to_xy: (latlng) ->
-    { x: latlng.lng / 180, y: latlng.lat / (0 - 90) }
-
-  add_marker: (name, lat, lng, country_code, region) ->
-    @markers[name] = { lat: lat, lng: lng, country_code: country_code, region: region }
-
-  update: ->
-    @stage.update()
-
-  create_map_marker: (x, y) ->
-    marker = new Shape()
-
-    marker.graphics.setStrokeStyle @MARKER_BORDER_WIDTH
-    marker.graphics.beginStroke @MARKER_BORDER_COLOR
-    marker.graphics.beginFill @MARKER_COLOR
-    marker.graphics.drawCircle 0, 0, @MARKER_RADIUS
-
-    marker.x = x
-    marker.y = y
-
-    @stage.addChild marker
-
-  plot_marker: (marker, scale, offset_x, offset_y, centering_x, centering_y) ->
-    xy = @latlng_to_xy { lat: marker.lat, lng: marker.lng }
-    px = xy.x * @stage_half_width + @stage_half_width
-    py = xy.y * @stage_half_height + @stage_half_height
-
-    px -= offset_x * @stage_half_width + @stage_half_width
-    py -= offset_y * @stage_half_height + @stage_half_height
+    px -= x_offset * stage_half_width + stage_half_width
+    py -= y_offset * stage_half_height + stage_half_height
 
     px *= scale
     py *= scale
 
-    px += centering_x
-    py += centering_y
+    px += x_centering
+    py += y_centering
 
-    @create_map_marker px, py
+    stage.addChild new MapMarker px, py
 
-window.MapIAm = MapIAm
+  determine_positioning: (country_data, stage_bounds, stage_half_width, stage_half_height) ->
+    bounds = country_data.bounds
+    xy_delta = latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
+    x_scale = stage_bounds.width  / (xy_delta.x * stage_half_width)
+    y_scale = stage_bounds.height / (xy_delta.y * stage_half_height)
+    scale = (if x_scale > y_scale then y_scale else x_scale) * 0.9
+
+    positioning =
+      offset: latlng_to_xy bounds
+      scale: scale
+      centering_x: ((stage_bounds.width / 2) - ((xy_delta.x * stage_half_width * scale) / 2))
+      centering_y: ((stage_bounds.height / 2) - ((xy_delta.y * stage_half_height * scale) / 2))
+
+WorldMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, all_countries_map_data, european_countries_map_data, us_states_map_data, stage_half_width, stage_half_height, markers) ->
+    super label_dom, 'World', stage_bounds, stage, all_countries_map_data, 1, 0, 0, stage_half_width, stage_half_height, stage_half_width, stage_half_height, true, markers, (country) =>
+      return unless country?
+
+      top_level_zoom_callback = =>
+        new WorldMapScene  label_dom, stage_bounds, stage, all_countries_map_data, european_countries_map_data, us_states_map_data, stage_half_width, stage_half_height, markers
+
+      if country.name == 'Europe'
+        new EuropeanMapScene label_dom, stage_bounds, stage, [country, european_countries_map_data], stage_half_width, stage_half_height, markers, top_level_zoom_callback
+
+      else if country.name == 'United States'
+        new USMapScene label_dom, stage_bounds, stage, [country, us_states_map_data], stage_half_width, stage_half_height, markers, top_level_zoom_callback
+
+      else
+        new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, markers, top_level_zoom_callback
+
+ContinentMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, @callback_class, markers, callback) ->
+    continent_country = country_data_arr[0]
+    country_data = country_data_arr[1]
+
+    p = @determine_positioning continent_country, stage_bounds, stage_half_width, stage_half_height
+
+    super label_dom, continent_country.name, stage_bounds, stage, country_data, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, true, markers, (country) =>
+      unless country? and callback?
+        callback()
+
+      return unless country?
+
+      new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, markers, =>
+        new @callback_class label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, markers, callback
+
+EuropeanMapScene = class extends ContinentMapScene
+  constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, markers, callback) ->
+    super label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, EuropeanMapScene, markers, callback
+
+USMapScene = class extends ContinentMapScene
+  constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, markers, callback) ->
+    super label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, USMapScene, markers, callback
+
+CountryMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, country_data, stage_half_width, stage_half_height, markers, callback) ->
+    p = @determine_positioning country_data, stage_bounds, stage_half_width, stage_half_height
+
+    super label_dom, country_data.name, stage_bounds, stage, [country_data], p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, false, markers, callback
+
+window.Country = class
+  constructor: (stage, country_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback) ->
+    @regions = []
+    @name = country_data.name
+
+    for borders in country_data.borders
+      region = new Region borders, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height
+      stage.addChild region
+      @regions.push region
+
+      region.onClick = ->
+        callback country_data if callback?
+
+      if has_hover == true
+        region.onMouseOver = =>
+          for r in @regions
+            #stage.removeChild r
+            r.show_hover_state()
+            #stage.addChild r
+
+          stage.update()
+
+        region.onMouseOut = =>
+          for r in @regions
+            r.show_normal_state()
+
+          stage.update()
+
+Region = class extends Shape
+  constructor: (@borders, @scale, @x_offset, @y_offset, @x_centering, @y_centering, @stage_half_width, @stage_half_height) ->
+    super()
+    @show_normal_state()
+
+  show_normal_state: ->
+    @render_region '#FFF', '#CCC', 1 # TODO style abstraction
+
+  show_hover_state: ->
+    @render_region '#FBB', '#999', 1 # TODO style abstraction
+
+  render_region: (country_color, border_color, border_width) ->
+    @graphics.clear()
+    @graphics.beginFill country_color
+    @graphics.beginStroke border_color
+    @graphics.setStrokeStyle border_width
+
+    first_move = true
+
+    @graphics.moveTo 0, 0
+
+    for latlng in @borders
+      xy = latlng_to_xy latlng
+      px = xy.x * @stage_half_width + @stage_half_width
+      py = xy.y * @stage_half_height + @stage_half_height
+
+      px -= @x_offset * @stage_half_width + @stage_half_width
+      py -= @y_offset * @stage_half_height + @stage_half_height
+
+      px *= @scale
+      py *= @scale
+
+      px += @x_centering
+      py += @y_centering
+
+      if first_move
+        @graphics.moveTo px, py
+        first_move = false
+      else
+        @graphics.lineTo px, py
+
+    @graphics.endStroke()
+    @graphics.endFill()
+
+latlng_to_xy =  (latlng) ->
+  { x: latlng.lng / 180, y: latlng.lat / (0 - 90) }
+
+MapMarker = class extends Shape
+  constructor: (x, y) ->
+    super()
+
+    @x = x
+    @y = y
+
+    @graphics.setStrokeStyle 1
+    @graphics.beginStroke '#800'
+    @graphics.beginFill '#C99'
+    @graphics.drawCircle 0, 0, 6
+
+window.MapBackground = class extends Shape
+  constructor: (stage_bounds, options) ->
+    super()
+
+    @graphics.beginFill options['background-color']
+    @graphics.moveTo 0, 0
+    @graphics.lineTo stage_bounds.width, 0
+    @graphics.lineTo stage_bounds.width, stage_bounds.height
+    @graphics.lineTo 0, stage_bounds.height
+    @graphics.endFill()

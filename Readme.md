@@ -2,4 +2,4 @@
 
 HTML5 Canvas zoomable world map, with support for markers
 
-#### MIT License, 2012 Chris Lindsey
+MIT License, 2012 Chris Lindsey
