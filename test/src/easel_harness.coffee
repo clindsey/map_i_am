@@ -12,7 +12,7 @@ Harness = class
 
 window.Stage = class extends Harness
   constructor: ->
-    super "update enableMouseOver"
+    super "update enableMouseOver removeAllChildren"
     @canvas = {}
     @children = []
   addChild: (display_object) ->

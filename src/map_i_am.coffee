@@ -63,9 +63,12 @@ WorldMapScene = class extends MapScene
       if country.name == 'Europe'
         new EuropeanMapScene label_dom, stage_bounds, stage, [country, european_countries], stage_half_width, stage_half_height, =>
           new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
+      else if country.name == 'United States'
+        new USMapScene label_dom, stage_bounds, stage, [country, states], stage_half_width, stage_half_height, =>
+          new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
       else
         new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
-          new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
+          new WorldMapScene label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
 
 EuropeanMapScene = class extends MapScene
   constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback) ->
@@ -77,7 +80,19 @@ EuropeanMapScene = class extends MapScene
         callback()
       return unless country?
       new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
-        new EuropeanMapScene  label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback
+        new EuropeanMapScene label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback
+
+USMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback) ->
+    us_country = country_data_arr[0]
+    country_data = country_data_arr[1]
+    p = @determine_positioning us_country, stage_bounds, stage_half_width, stage_half_height
+    super label_dom, 'United States', stage_bounds, stage, country_data, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, true, (country) =>
+      unless country? and callback?
+        callback()
+      return unless country?
+      new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
+        new USMapScene label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback
 
 CountryMapScene = class extends MapScene
   constructor: (label_dom, stage_bounds, stage, country_data, stage_half_width, stage_half_height, callback) ->

@@ -32,7 +32,7 @@
   window.Stage = (function() {
     __extends(_Class, Harness);
     function _Class() {
-      _Class.__super__.constructor.call(this, "update enableMouseOver");
+      _Class.__super__.constructor.call(this, "update enableMouseOver removeAllChildren");
       this.canvas = {};
       this.children = [];
     }
