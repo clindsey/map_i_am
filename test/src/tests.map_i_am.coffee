@@ -30,8 +30,16 @@ jQuery ->
       ((e) -> e == 'Err: countries map data not specified!'),
       'throws message when counries map data is not specified'
 
+    raises (-> new MapIAm 'map_i_am-canvas', 'region-label', {}),
+      ((e) -> e == 'Err: european countries map data not specified!'),
+      'throws message when european counries map data is not specified'
+
+    raises (-> new MapIAm 'map_i_am-canvas', 'region-label', {}, {}),
+      ((e) -> e == 'Err: US states map data not specified!'),
+      'throws message when US states map data is not specified'
+
   test 'MapIAm intialize', ->
-    map_i_am = new MapIAm 'map_i_am-canvas', 'region-label', {}
+    map_i_am = new MapIAm 'map_i_am-canvas', 'region-label', {}, {}, {}
     ok map_i_am, 'MapIAm instance map_i_am'
 
     ok map_i_am.stage, 'map_i_am.stage'
@@ -47,17 +55,17 @@ jQuery ->
     equals map_i_am.stage_half_height, canvas_height * (3 / 5), 'map_i_am.stage_half_height'
 
   test 'MapIAm defaults to world level', ->
-    map_i_am = new MapIAm 'map_i_am-canvas', 'region-label', countries
+    map_i_am = new MapIAm 'map_i_am-canvas', 'region-label', countries, {}, {}
 
     equals document.getElementById('region-label').innerHTML, 'World', 'changes map label text'
 
     equals map_i_am.stage.children[0].constructor, window.MapBackground, 'map_i_am.stage first child is background'
 
-    equals map_i_am.world_map_scene.countries.length, countries.length, 'map_i_am should build all supplied countries'
+    equals map_i_am.active_scene.countries.length, countries.length, 'map_i_am should build all supplied countries'
 
-    equals map_i_am.world_map_scene.countries[0].constructor, window.Country, 'map_i_am.world_scene.countries is filled with Country instances'
+    equals map_i_am.active_scene.countries[0].constructor, window.Country, 'map_i_am.world_scene.countries is filled with Country instances'
 
-    equals map_i_am.world_map_scene.countries[0].regions.length, countries[0].borders.length, 'map_i_am should build all regions for a country'
+    equals map_i_am.active_scene.countries[0].regions.length, countries[0].borders.length, 'map_i_am should build all regions for a country'
 
     ok map_i_am.stage.calls[map_i_am.stage.calls.length - 1], "map_i_am.stage has been updated"
     equals map_i_am.stage.calls[map_i_am.stage.calls.length - 1].method, 'update', 'map_i_am renders stage'
