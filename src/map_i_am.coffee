@@ -23,7 +23,7 @@ window.MapIAm = class
     @world_map_scene = new WorldMapScene label_dom, @stage_bounds, @stage, all_countries_map_data, @stage_half_width, @stage_half_height
 
 window.MapScene = class
-  constructor: (label_dom, label, stage_bounds, stage, map_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, callback) ->
+  constructor: (label_dom, label, stage_bounds, stage, map_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback) ->
     @countries = []
 
     label_dom.innerHTML = label
@@ -40,21 +40,10 @@ window.MapScene = class
     stage.addChild background
 
     for country in map_data
-      @countries.push new Country stage, country, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, callback
+      @countries.push new Country stage, country, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback
 
     stage.update()
 
-WorldMapScene = class extends MapScene
-  constructor: (label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height) ->
-    super label_dom, 'World', stage_bounds, stage, map_data, 1, 0, 0, stage_half_width, stage_half_height, stage_half_width, stage_half_height, (country) =>
-      return unless country?
-      new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
-        new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
-
-CountryMapScene = class extends MapScene
-  constructor: (label_dom, stage_bounds, stage, country_data, stage_half_width, stage_half_height, callback) ->
-    p = @determine_positioning country_data, stage_bounds, stage_half_width, stage_half_height
-    super label_dom, country_data.name, stage_bounds, stage, [country_data], p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, callback
   determine_positioning: (country_data, stage_bounds, stage_half_width, stage_half_height) ->
     bounds = country_data.bounds
     xy_delta = latlng_to_xy lat: bounds.lat_delta, lng: bounds.lng_delta
@@ -67,8 +56,36 @@ CountryMapScene = class extends MapScene
       centering_x: ((stage_bounds.width / 2) - ((xy_delta.x * stage_half_width * scale) / 2))
       centering_y: ((stage_bounds.height / 2) - ((xy_delta.y * stage_half_height * scale) / 2))
 
+WorldMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height) ->
+    super label_dom, 'World', stage_bounds, stage, map_data, 1, 0, 0, stage_half_width, stage_half_height, stage_half_width, stage_half_height, true, (country) =>
+      return unless country?
+      if country.name == 'Europe'
+        new EuropeanMapScene label_dom, stage_bounds, stage, [country, european_countries], stage_half_width, stage_half_height, =>
+          new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
+      else
+        new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
+          new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
+
+EuropeanMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback) ->
+    europe_country = country_data_arr[0]
+    country_data = country_data_arr[1]
+    p = @determine_positioning europe_country, stage_bounds, stage_half_width, stage_half_height
+    super label_dom, 'Europe', stage_bounds, stage, country_data, p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, true, (country) =>
+      unless country? and callback?
+        callback()
+      return unless country?
+      new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, =>
+        new EuropeanMapScene  label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, callback
+
+CountryMapScene = class extends MapScene
+  constructor: (label_dom, stage_bounds, stage, country_data, stage_half_width, stage_half_height, callback) ->
+    p = @determine_positioning country_data, stage_bounds, stage_half_width, stage_half_height
+    super label_dom, country_data.name, stage_bounds, stage, [country_data], p.scale, p.offset.x, p.offset.y, p.centering_x, p.centering_y, stage_half_width, stage_half_height, false, callback
+
 window.Country = class
-  constructor: (stage, country_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, callback) ->
+  constructor: (stage, country_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback) ->
     @regions = []
     @name = country_data.name
 
@@ -79,16 +96,17 @@ window.Country = class
 
       region.onClick = ->
         callback country_data if callback?
-      region.onMouseOver = =>
-        for r in @regions
-          stage.removeChild r
-          r.show_hover_state()
-          stage.addChild r
-        stage.update()
-      region.onMouseOut = =>
-        for r in @regions
-          r.show_normal_state()
-        stage.update()
+      if has_hover == true
+        region.onMouseOver = =>
+          for r in @regions
+            stage.removeChild r
+            r.show_hover_state()
+            stage.addChild r
+          stage.update()
+        region.onMouseOut = =>
+          for r in @regions
+            r.show_normal_state()
+          stage.update()
 
 Region = class extends Shape
   constructor: (@borders, @scale, @x_offset, @y_offset, @x_centering, @y_centering, @stage_half_width, @stage_half_height) ->
