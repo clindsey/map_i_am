@@ -1,5 +1,5 @@
 window.MapIAm = class
-  constructor: (bind_canvas_elem_id, bind_label_elem_id, all_countries_map_data) ->
+  constructor: (bind_canvas_elem_id, bind_label_elem_id, all_countries_map_data, european_countries_map_data, us_states_map_data) ->
     throw 'Err: canvas ID not specified!' unless bind_canvas_elem_id?
     canvas_dom = document.getElementById bind_canvas_elem_id
     throw 'Err: canvas ID incorrect, element not found!' unless canvas_dom?
@@ -9,6 +9,10 @@ window.MapIAm = class
     throw 'Err: label ID incorrect, element not found!' unless label_dom?
 
     throw 'Err: countries map data not specified!' unless all_countries_map_data?
+
+    throw 'Err: european countries map data not specified!' unless european_countries_map_data?
+
+    throw 'Err: US states map data not specified!' unless us_states_map_data?
 
     @stage = new Stage canvas_dom
     @stage.enableMouseOver()
@@ -20,7 +24,7 @@ window.MapIAm = class
     @stage_half_width = @stage_bounds.width / 2
     @stage_half_height = @stage_bounds.height * (3 / 5)
 
-    @world_map_scene = new WorldMapScene label_dom, @stage_bounds, @stage, all_countries_map_data, @stage_half_width, @stage_half_height
+    new WorldMapScene label_dom, @stage_bounds, @stage, all_countries_map_data, european_countries_map_data, us_states_map_data, @stage_half_width, @stage_half_height
 
 window.MapScene = class
   constructor: (label_dom, label, stage_bounds, stage, map_data, scale, x_offset, y_offset, x_centering, y_centering, stage_half_width, stage_half_height, has_hover, callback) ->
@@ -58,21 +62,21 @@ window.MapScene = class
       centering_y: ((stage_bounds.height / 2) - ((xy_delta.y * stage_half_height * scale) / 2))
 
 WorldMapScene = class extends MapScene
-  constructor: (label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height) ->
-    super label_dom, 'World', stage_bounds, stage, map_data, 1, 0, 0, stage_half_width, stage_half_height, stage_half_width, stage_half_height, true, (country) =>
+  constructor: (label_dom, stage_bounds, stage, all_countries_map_data, european_countries_map_data, us_states_map_data, stage_half_width, stage_half_height) ->
+    super label_dom, 'World', stage_bounds, stage, all_countries_map_data, 1, 0, 0, stage_half_width, stage_half_height, stage_half_width, stage_half_height, true, (country) =>
       return unless country?
 
-      to_level_zoom_callback = =>
-        new WorldMapScene  label_dom, stage_bounds, stage, map_data, stage_half_width, stage_half_height
+      top_level_zoom_callback = =>
+        new WorldMapScene  label_dom, stage_bounds, stage, all_countries_map_data, european_countries_map_data, us_states_map_data, stage_half_width, stage_half_height
 
       if country.name == 'Europe'
-        new EuropeanMapScene label_dom, stage_bounds, stage, [country, european_countries], stage_half_width, stage_half_height, to_level_zoom_callback
+        new EuropeanMapScene label_dom, stage_bounds, stage, [country, european_countries_map_data], stage_half_width, stage_half_height, top_level_zoom_callback
 
       else if country.name == 'United States'
-        new USMapScene label_dom, stage_bounds, stage, [country, states], stage_half_width, stage_half_height, to_level_zoom_callback
+        new USMapScene label_dom, stage_bounds, stage, [country, us_states_map_data], stage_half_width, stage_half_height, top_level_zoom_callback
 
       else
-        new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, to_level_zoom_callback
+        new CountryMapScene label_dom, stage_bounds, stage, country, stage_half_width, stage_half_height, top_level_zoom_callback
 
 ContinentMapScene = class extends MapScene
   constructor: (label_dom, stage_bounds, stage, country_data_arr, stage_half_width, stage_half_height, @callback_class, callback) ->
